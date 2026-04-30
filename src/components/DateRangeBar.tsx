@@ -6,10 +6,10 @@ import { Calendar } from "lucide-react";
 const PRESETS = [
   { value: "today", label: "Today" },
   { value: "yesterday", label: "Yesterday" },
-  { value: "last7", label: "Last 7" },
-  { value: "last30", label: "Last 30" },
-  { value: "week", label: "This week" },
-  { value: "month", label: "This month" },
+  { value: "last7", label: "7d" },
+  { value: "last30", label: "30d" },
+  { value: "week", label: "Week" },
+  { value: "month", label: "Month" },
 ];
 
 export function DateRangeBar() {
@@ -27,24 +27,21 @@ export function DateRangeBar() {
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <Calendar size={16} className="text-gray-500" />
-      <span className="text-sm text-gray-500">Range:</span>
-      <div className="flex flex-wrap gap-1.5 bg-gray-100 rounded-lg p-1">
-        {PRESETS.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => setRange(p.value)}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-              current === p.value
-                ? "bg-white text-brand-700 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+    <div className="inline-flex items-center gap-1.5 bg-white border border-ink-200 rounded-xl shadow-soft p-1">
+      <Calendar size={15} className="text-ink-400 ml-2 mr-0.5" />
+      {PRESETS.map((p) => (
+        <button
+          key={p.value}
+          onClick={() => setRange(p.value)}
+          className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+            current === p.value
+              ? "bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-glow-sm"
+              : "text-ink-600 hover:text-ink-900 hover:bg-ink-100"
+          }`}
+        >
+          {p.label}
+        </button>
+      ))}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   Users,
   Target as TargetIcon,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { ActivityLineChart } from "@/components/Charts";
 import { AutoRefresh } from "@/components/AutoRefresh";
@@ -37,7 +38,7 @@ export default async function DashboardPage({
   const social = overview.find((o) => o.employee.role === "social_media");
   const caller = overview.find((o) => o.employee.role === "caller");
 
-  // build combined time series for both
+  // Build combined time series
   const series: Record<string, unknown>[] = [];
   if (social) {
     const socialTs = await getDailyTimeSeries(social.employee.id, range);
@@ -74,34 +75,29 @@ export default async function DashboardPage({
     <AppShell>
       <PageHeader
         title="Dashboard"
-        description={`Overview of team activity — ${range.label}`}
+        description={`Real-time overview of your team's output — ${range.label}`}
+        eyebrow="Live"
       >
         <DateRangeBar />
         <AutoRefresh />
       </PageHeader>
 
       {!social && !caller ? (
-        <div className="card p-8 text-center">
-          <p className="text-gray-600 mb-4">
-            Welcome! Add your first designations to begin tracking.
-          </p>
-          <Link href="/employees" className="btn-primary inline-flex">
-            Add Designations
-          </Link>
-        </div>
+        <EmptyState />
       ) : (
         <>
           {/* Top KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <StatCard
-              label="Leads Generated"
+              label="Total Leads"
               value={totalLeads}
               icon={Users}
-              color="indigo"
+              color="purple"
               hint={`${convertedLeads} converted`}
+              accent
             />
             <StatCard
-              label="LinkedIn Reach"
+              label="LinkedIn Activity"
               value={(social?.stats.linkedinPosts || 0) + (social?.stats.linkedinOutreach || 0)}
               icon={Linkedin}
               color="sky"
@@ -122,95 +118,97 @@ export default async function DashboardPage({
               label="Zoom Meetings"
               value={caller?.stats.zoomMeetings || 0}
               icon={Video}
-              color="purple"
+              color="fuchsia"
               hint={`${caller?.stats.zoomCompleted || 0} completed`}
             />
           </div>
 
-          {/* Per-employee panels */}
+          {/* Per-designation panels */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {social && (
-              <EmployeePanel
+              <DesignationPanel
                 title={social.employee.name}
                 role="Social Media · Lead Gen"
+                gradient="from-sky-500 via-blue-500 to-indigo-500"
                 stats={[
                   {
                     label: "LinkedIn Posts",
                     value: social.stats.linkedinPosts,
                     icon: Linkedin,
-                    color: "sky" as const,
+                    tone: "sky",
                   },
                   {
                     label: "LinkedIn Outreach",
                     value: social.stats.linkedinOutreach,
                     icon: Linkedin,
-                    color: "sky" as const,
-                    hint: `${social.stats.linkedinReplied} replied · ${social.stats.linkedinInterested} interested`,
+                    tone: "sky",
+                    hint: `${social.stats.linkedinReplied} replied · ${social.stats.linkedinInterested} 🔥`,
                   },
                   {
                     label: "Instagram Posts",
                     value: social.stats.instagramPosts,
                     icon: Instagram,
-                    color: "rose" as const,
+                    tone: "rose",
                   },
                   {
                     label: "Instagram DMs",
                     value: social.stats.instagramOutreach,
                     icon: Instagram,
-                    color: "rose" as const,
+                    tone: "rose",
                     hint: `${social.stats.instagramInterested} interested`,
                   },
                   {
                     label: "Emails Sent",
                     value: social.stats.emails,
                     icon: Mail,
-                    color: "amber" as const,
-                    hint: `${social.stats.emailsReplied} replied · ${social.stats.emailsInterested} interested`,
+                    tone: "amber",
+                    hint: `${social.stats.emailsReplied} replied · ${social.stats.emailsInterested} 🔥`,
                   },
                   {
                     label: "Leads Provided",
                     value: social.stats.leadsProvided,
                     icon: Users,
-                    color: "indigo" as const,
+                    tone: "purple",
                   },
                 ]}
                 targets={socialTargets}
               />
             )}
             {caller && (
-              <EmployeePanel
+              <DesignationPanel
                 title={caller.employee.name}
                 role="Cold Caller · Closer"
+                gradient="from-emerald-500 via-teal-500 to-cyan-500"
                 stats={[
                   {
                     label: "Cold Calls",
                     value: caller.stats.coldCalls,
                     icon: Phone,
-                    color: "emerald" as const,
+                    tone: "emerald",
                   },
                   {
                     label: "Connected",
                     value: caller.stats.coldCallsConnected,
                     icon: Phone,
-                    color: "emerald" as const,
+                    tone: "emerald",
                   },
                   {
-                    label: "Interested Leads",
+                    label: "Interested",
                     value: caller.stats.coldCallsInterested,
                     icon: TrendingUp,
-                    color: "indigo" as const,
+                    tone: "purple",
                   },
                   {
                     label: "Zoom Meetings",
                     value: caller.stats.zoomMeetings,
                     icon: Video,
-                    color: "purple" as const,
+                    tone: "fuchsia",
                   },
                   {
-                    label: "Meetings Completed",
+                    label: "Completed",
                     value: caller.stats.zoomCompleted,
                     icon: Video,
-                    color: "purple" as const,
+                    tone: "fuchsia",
                   },
                 ]}
                 targets={callerTargets}
@@ -220,18 +218,26 @@ export default async function DashboardPage({
 
           {/* Activity Chart */}
           {series.length > 0 && (
-            <div className="card p-6 mb-8">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">
-                Daily Activity Trend
-              </h3>
+            <div className="card p-6 md:p-7">
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <h3 className="text-base font-bold text-ink-900 tracking-tight">
+                    Activity Trend
+                  </h3>
+                  <p className="text-xs text-ink-500 mt-0.5">
+                    Daily output across all channels — {range.label.toLowerCase()}
+                  </p>
+                </div>
+              </div>
               <ActivityLineChart
                 data={series}
                 series={[
-                  { dataKey: "social_posts", name: "Social Posts" },
-                  { dataKey: "social_outreach", name: "Outreach + Emails" },
-                  { dataKey: "cold_calls", name: "Cold Calls" },
-                  { dataKey: "zoom_meetings", name: "Zoom Meetings" },
+                  { dataKey: "social_posts", name: "Social Posts", color: "#0ea5e9" },
+                  { dataKey: "social_outreach", name: "Outreach + Emails", color: "#f59e0b" },
+                  { dataKey: "cold_calls", name: "Cold Calls", color: "#10b981" },
+                  { dataKey: "zoom_meetings", name: "Zoom Meetings", color: "#a855f7" },
                 ]}
+                height={320}
               />
             </div>
           )}
@@ -241,84 +247,156 @@ export default async function DashboardPage({
   );
 }
 
+function EmptyState() {
+  return (
+    <div className="card p-12 text-center bg-gradient-to-br from-white via-brand-50/30 to-fuchsia-50/30">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-fuchsia-500 text-white shadow-glow mb-5">
+        <Sparkles size={28} strokeWidth={2.25} />
+      </div>
+      <h2 className="text-2xl font-bold text-ink-900 tracking-tight">Welcome to AI Kab</h2>
+      <p className="mt-2 text-sm text-ink-500 max-w-md mx-auto">
+        Add your first designations to start tracking activity. You can add a Social Media person and a Cold Caller — or any roles you want to monitor.
+      </p>
+      <Link href="/employees" className="btn-primary inline-flex mt-6">
+        <Sparkles size={15} />
+        Get Started
+      </Link>
+    </div>
+  );
+}
+
+type Tone = "indigo" | "emerald" | "rose" | "amber" | "sky" | "purple" | "slate" | "fuchsia";
 type Stat = {
   label: string;
   value: number;
   icon: typeof Linkedin;
-  color: "indigo" | "emerald" | "rose" | "amber" | "sky" | "purple" | "slate";
+  tone: Tone;
   hint?: string;
 };
 
-function EmployeePanel({
+const TONE_BG: Record<Tone, string> = {
+  indigo: "bg-indigo-50 text-indigo-600",
+  emerald: "bg-emerald-50 text-emerald-600",
+  rose: "bg-rose-50 text-rose-600",
+  amber: "bg-amber-50 text-amber-600",
+  sky: "bg-sky-50 text-sky-600",
+  purple: "bg-purple-50 text-purple-600",
+  fuchsia: "bg-fuchsia-50 text-fuchsia-600",
+  slate: "bg-slate-50 text-slate-600",
+};
+
+function DesignationPanel({
   title,
   role,
+  gradient,
   stats,
   targets,
 }: {
   title: string;
   role: string;
+  gradient: string;
   stats: Stat[];
-  targets: Array<{ metric: string; actual: number; expectedGoal: number; percent: number; period: string }>;
+  targets: Array<{
+    metric: string;
+    actual: number;
+    expectedGoal: number;
+    percent: number;
+    period: string;
+  }>;
 }) {
+  const initial = title.charAt(0).toUpperCase();
+
   return (
-    <div className="card p-6">
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <p className="text-xs text-gray-500">{role}</p>
+    <div className="card overflow-hidden">
+      {/* Header */}
+      <div className="relative p-6 border-b border-ink-100">
+        <div
+          className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-[0.04] pointer-events-none`}
+        />
+        <div className="relative flex items-center gap-4">
+          <div
+            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} text-white flex items-center justify-center text-lg font-bold shadow-soft`}
+          >
+            {initial}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-bold text-ink-900 tracking-tight truncate">
+              {title}
+            </h3>
+            <p className="text-xs text-ink-500 font-medium">{role}</p>
+          </div>
         </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div key={s.label} className="rounded-lg border border-gray-100 p-3">
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <Icon size={14} />
-                {s.label}
-              </div>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{s.value}</p>
-              {s.hint && <p className="text-[11px] text-gray-400 mt-0.5">{s.hint}</p>}
-            </div>
-          );
-        })}
       </div>
 
-      {targets.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            <TargetIcon size={12} />
-            Target Progress
-          </div>
-          <div className="space-y-2">
-            {targets.map((t) => (
-              <div key={t.metric}>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-700">{formatLabel(t.metric)}</span>
-                  <span className="text-gray-500">
-                    {t.actual} / {t.expectedGoal}
-                    <span className="ml-1 text-gray-400">({t.period})</span>
+      {/* Stats grid */}
+      <div className="p-5">
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          {stats.map((s) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.label}
+                className="rounded-xl border border-ink-100 p-3.5 hover:border-ink-200 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-ink-500 uppercase tracking-wider">
+                    {s.label}
                   </span>
+                  <div className={`p-1.5 rounded-md ${TONE_BG[s.tone]}`}>
+                    <Icon size={11} strokeWidth={2.5} />
+                  </div>
                 </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      t.percent >= 100
-                        ? "bg-emerald-500"
-                        : t.percent >= 60
-                        ? "bg-brand-500"
-                        : t.percent >= 30
-                        ? "bg-amber-500"
-                        : "bg-rose-500"
-                    }`}
-                    style={{ width: `${t.percent}%` }}
-                  />
-                </div>
+                <p className="text-2xl font-bold text-ink-900 tracking-tight tabular-nums">
+                  {s.value.toLocaleString()}
+                </p>
+                {s.hint && (
+                  <p className="text-[11px] text-ink-500 mt-0.5 truncate">{s.hint}</p>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+
+        {targets.length > 0 && (
+          <div className="pt-5 border-t border-ink-100">
+            <div className="flex items-center gap-1.5 mb-3 text-[10px] font-bold text-ink-500 uppercase tracking-wider">
+              <TargetIcon size={11} />
+              Target Progress
+            </div>
+            <div className="space-y-3">
+              {targets.map((t) => (
+                <div key={t.metric}>
+                  <div className="flex items-center justify-between text-xs mb-1.5">
+                    <span className="font-semibold text-ink-700">{formatLabel(t.metric)}</span>
+                    <span className="text-ink-500 tabular-nums">
+                      <span className="font-bold text-ink-900">{t.actual}</span>
+                      <span className="text-ink-300 mx-1">/</span>
+                      {t.expectedGoal}
+                      <span className="ml-1.5 text-[10px] font-semibold uppercase">
+                        ({t.percent}%)
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-ink-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        t.percent >= 100
+                          ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                          : t.percent >= 60
+                          ? "bg-gradient-to-r from-brand-500 to-fuchsia-500"
+                          : t.percent >= 30
+                          ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                          : "bg-gradient-to-r from-rose-500 to-red-500"
+                      }`}
+                      style={{ width: `${Math.max(2, t.percent)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

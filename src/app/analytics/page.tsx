@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { DateRangeBar } from "@/components/DateRangeBar";
+import { AutoRefresh } from "@/components/AutoRefresh";
 import { prisma } from "@/lib/db";
 import { getDateRange, formatLabel } from "@/lib/utils";
 import { getEmployeeStats, getDailyTimeSeries } from "@/lib/stats";
@@ -24,7 +25,6 @@ export default async function Page({
     orderBy: { name: "asc" },
   });
 
-  // Status breakdowns
   const linkedinByStatus = await prisma.linkedInOutreach.groupBy({
     by: ["status"],
     _count: true,
@@ -87,13 +87,22 @@ export default async function Page({
       <PageHeader
         title="Analytics"
         description={`Deep dive into team performance — ${range.label}`}
+        eyebrow="Insights"
       >
         <DateRangeBar />
+        <AutoRefresh />
       </PageHeader>
 
-      {/* Comparison chart */}
-      <div className="card p-6 mb-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-4">Daily Activity (All)</h3>
+      {/* Comparison */}
+      <div className="card p-6 md:p-7 mb-6">
+        <div className="mb-5">
+          <h3 className="text-base font-bold text-ink-900 tracking-tight">
+            Daily Activity — All Designations
+          </h3>
+          <p className="text-xs text-ink-500 mt-0.5">
+            Side-by-side comparison of every channel
+          </p>
+        </div>
         {comparisonData.length > 0 ? (
           <ActivityLineChart
             data={comparisonData}
@@ -103,63 +112,71 @@ export default async function Page({
                 dataKey: k,
                 name: k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
               }))}
-            height={320}
+            height={340}
           />
         ) : (
-          <p className="text-sm text-gray-400">No data in range</p>
+          <p className="text-sm text-ink-400 text-center py-12">No data in range</p>
         )}
       </div>
 
       {/* Status breakdowns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
         <BreakdownCard
-          title="LinkedIn Outreach Status"
+          title="LinkedIn Outreach"
+          subtitle="Status breakdown"
           data={linkedinByStatus.map((b) => ({ name: formatLabel(b.status), value: b._count }))}
         />
         <BreakdownCard
-          title="Instagram DM Status"
+          title="Instagram DMs"
+          subtitle="Reply status"
           data={igByStatus.map((b) => ({ name: formatLabel(b.status), value: b._count }))}
         />
         <BreakdownCard
-          title="Email Status"
+          title="Emails"
+          subtitle="Status breakdown"
           data={emailByStatus.map((b) => ({ name: formatLabel(b.status), value: b._count }))}
         />
         <BreakdownCard
-          title="Cold Call Outcomes"
+          title="Cold Calls"
+          subtitle="Outcomes"
           data={callByOutcome.map((b) => ({ name: formatLabel(b.outcome), value: b._count }))}
         />
         <BreakdownCard
-          title="Zoom Meeting Status"
+          title="Zoom Meetings"
+          subtitle="Status"
           data={zoomByStatus.map((b) => ({ name: formatLabel(b.status), value: b._count }))}
         />
         <BreakdownCard
-          title="Leads by Status"
+          title="Leads"
+          subtitle="Pipeline status"
           data={leadByStatus.map((b) => ({ name: formatLabel(b.status), value: b._count }))}
         />
       </div>
 
-      {/* Per-employee detailed */}
+      {/* Per-designation detailed */}
       {employeeStats.map(({ employee, timeseries }) => (
-        <div key={employee.id} className="card p-6 mb-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-1">{employee.name}</h3>
-          <p className="text-xs text-gray-500 mb-4">{formatLabel(employee.role)}</p>
+        <div key={employee.id} className="card p-6 md:p-7 mb-6">
+          <div className="mb-5">
+            <h3 className="text-base font-bold text-ink-900 tracking-tight">{employee.name}</h3>
+            <p className="text-xs text-ink-500 mt-0.5">{formatLabel(employee.role)}</p>
+          </div>
           {employee.role === "social_media" ? (
             <ActivityBarChart
               data={timeseries}
               series={[
-                { dataKey: "linkedin_posts", name: "LinkedIn Posts" },
-                { dataKey: "linkedin_outreach", name: "LinkedIn Outreach" },
-                { dataKey: "instagram_posts", name: "IG Posts" },
-                { dataKey: "instagram_outreach", name: "IG DMs" },
-                { dataKey: "emails", name: "Emails" },
+                { dataKey: "linkedin_posts", name: "LinkedIn Posts", color: "#0ea5e9" },
+                { dataKey: "linkedin_outreach", name: "LinkedIn Outreach", color: "#3b82f6" },
+                { dataKey: "instagram_posts", name: "IG Posts", color: "#ec4899" },
+                { dataKey: "instagram_outreach", name: "IG DMs", color: "#f43f5e" },
+                { dataKey: "emails", name: "Emails", color: "#f59e0b" },
               ]}
             />
           ) : (
             <ActivityBarChart
               data={timeseries}
               series={[
-                { dataKey: "cold_calls", name: "Cold Calls" },
-                { dataKey: "zoom_meetings", name: "Zoom Meetings" },
+                { dataKey: "cold_calls", name: "Cold Calls", color: "#10b981" },
+                { dataKey: "zoom_meetings", name: "Zoom Meetings", color: "#a855f7" },
               ]}
             />
           )}
@@ -171,14 +188,19 @@ export default async function Page({
 
 function BreakdownCard({
   title,
+  subtitle,
   data,
 }: {
   title: string;
+  subtitle: string;
   data: { name: string; value: number }[];
 }) {
   return (
     <div className="card p-5">
-      <h4 className="text-sm font-semibold text-gray-700 mb-3">{title}</h4>
+      <div className="mb-1">
+        <h4 className="text-sm font-bold text-ink-900 tracking-tight">{title}</h4>
+        <p className="text-[11px] text-ink-500">{subtitle}</p>
+      </div>
       <StatusPieChart data={data} />
     </div>
   );
