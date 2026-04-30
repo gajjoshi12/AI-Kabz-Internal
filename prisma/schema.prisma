@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id       String   @id @default(cuid())
+  name     String
+  role     String // 'social_media' | 'caller'
+  email    String?
+  phone    String?
+  joinDate DateTime @default(now())
+  active   Boolean  @default(true)
+
+  linkedInPosts       LinkedInPost[]
+  linkedInOutreaches  LinkedInOutreach[]
+  instagramPosts      InstagramPost[]
+  instagramOutreaches InstagramOutreach[]
+  emails              Email[]
+  coldCalls           ColdCall[]
+  zoomMeetings        ZoomMeeting[]
+  leadsProvided       Lead[]              @relation("LeadProvider")
+  leadsAssigned       Lead[]              @relation("LeadAssignee")
+  dailyReports        DailyReport[]
+  targets             Target[]
+  activities          Activity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LinkedInPost {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  title       String
+  content     String?
+  postUrl     String?
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  impressions Int      @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([employeeId, date])
+}
+
+model LinkedInOutreach {
+  id              String   @id @default(cuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date            DateTime @default(now())
+  prospectName    String
+  prospectTitle   String?
+  company         String?
+  profileUrl      String?
+  messageType     String   @default("message") // 'connection_request' | 'message' | 'follow_up'
+  status          String   @default("sent") // 'sent' | 'accepted' | 'replied' | 'interested' | 'not_interested' | 'no_response'
+  notes           String?
+  convertedToLead Boolean  @default(false)
+  leadId          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([employeeId, date])
+  @@index([status])
+}
+
+model InstagramPost {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime @default(now())
+  postType   String   @default("post") // 'post' | 'reel' | 'story'
+  caption    String?
+  postUrl    String?
+  likes      Int      @default(0)
+  comments   Int      @default(0)
+  saves      Int      @default(0)
+  reach      Int      @default(0)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([employeeId, date])
+}
+
+model InstagramOutreach {
+  id              String   @id @default(cuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date            DateTime @default(now())
+  prospectHandle  String
+  prospectName    String?
+  status          String   @default("sent") // 'sent' | 'replied' | 'interested' | 'not_interested' | 'no_response'
+  notes           String?
+  convertedToLead Boolean  @default(false)
+  leadId          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([employeeId, date])
+  @@index([status])
+}
+
+model Email {
+  id             String   @id @default(cuid())
+  employeeId     String
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date           DateTime @default(now())
+  recipientName  String
+  recipientEmail String
+  subject        String
+  body           String?
+  status         String   @default("sent") // 'sent' | 'opened' | 'replied' | 'bounced' | 'interested' | 'not_interested'
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([employeeId, date])
+  @@index([status])
+}
+
+model Lead {
+  id           String        @id @default(cuid())
+  date         DateTime      @default(now())
+  name         String
+  phone        String?
+  email        String?
+  company      String?
+  source       String        @default("other") // 'linkedin' | 'instagram' | 'email' | 'referral' | 'other'
+  providedById String?
+  providedBy   Employee?     @relation("LeadProvider", fields: [providedById], references: [id])
+  assignedToId String?
+  assignedTo   Employee?     @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  status       String        @default("new") // 'new' | 'contacted' | 'meeting_scheduled' | 'converted' | 'lost'
+  priority     String        @default("medium") // 'high' | 'medium' | 'low'
+  value        Float?
+  notes        String?
+  coldCalls    ColdCall[]
+  zoomMeetings ZoomMeeting[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+  @@index([providedById])
+  @@index([assignedToId])
+}
+
+model ColdCall {
+  id            String    @id @default(cuid())
+  employeeId    String
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leadId        String?
+  lead          Lead?     @relation(fields: [leadId], references: [id])
+  date          DateTime  @default(now())
+  prospectName  String
+  prospectPhone String?
+  duration      Int       @default(0) // in minutes
+  outcome       String    @default("no_answer") // 'connected' | 'no_answer' | 'busy' | 'voicemail' | 'callback' | 'meeting_scheduled' | 'interested' | 'not_interested'
+  followUpDate  DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  @@index([employeeId, date])
+  @@index([outcome])
+}
+
+model ZoomMeeting {
+  id            String   @id @default(cuid())
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leadId        String?
+  lead          Lead?    @relation(fields: [leadId], references: [id])
+  scheduledAt   DateTime
+  duration      Int      @default(0) // in minutes
+  attendeeName  String
+  attendeeEmail String?
+  status        String   @default("scheduled") // 'scheduled' | 'completed' | 'no_show' | 'cancelled' | 'rescheduled'
+  outcome       String? // 'interested' | 'not_interested' | 'follow_up' | 'closed_won' | 'closed_lost'
+  meetingUrl    String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([employeeId, scheduledAt])
+  @@index([status])
+}
+
+model DailyReport {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date         DateTime
+  summary      String
+  highlights   String?
+  blockers     String?
+  tomorrowPlan String?
+  createdAt    DateTime @default(now())
+
+  @@unique([employeeId, date])
+  @@index([date])
+}
+
+model Target {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  metric      String // 'linkedin_posts' | 'linkedin_outreach' | 'instagram_posts' | 'instagram_outreach' | 'emails' | 'cold_calls' | 'zoom_meetings' | 'leads_provided'
+  period      String // 'daily' | 'weekly' | 'monthly'
+  targetValue Int
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([employeeId, metric, period])
+}
+
+model Activity {
+  id         String   @id @default(cuid())
+  employeeId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  type       String // 'create' | 'update' | 'delete'
+  entity     String // e.g. 'linkedin_post', 'cold_call'
+  entityId   String?
+  description String
+  meta       String? // json string
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([employeeId])
+}
